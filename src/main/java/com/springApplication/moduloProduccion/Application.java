@@ -15,10 +15,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication
 @Theme(value = "modulo-produccion", variant = Lumo.DARK)
-public class Application implements AppShellConfigurator {
+public class Application implements AppShellConfigurator{
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
 
+    
 }

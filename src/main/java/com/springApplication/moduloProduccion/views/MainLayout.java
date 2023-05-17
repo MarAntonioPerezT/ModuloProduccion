@@ -8,10 +8,19 @@ import com.vaadin.flow.component.html.Footer;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Header;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.map.configuration.View;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.router.PageTitle;
+import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import org.vaadin.lineawesome.LineAwesomeIcon;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+
+
+@Route("Menu")
+@RolesAllowed("ADMIN")
 
 /**
  * The main view is a top-level placeholder for other views.
@@ -55,9 +64,13 @@ public class MainLayout extends AppLayout {
         AppNav nav = new AppNav();
 
         nav.addItem(new AppNavItem("Órdenes de producción", OrdenesProduccionView.class));
-        nav.addItem(new AppNavItem("Alta de procesos", AltaProcesosView.class));
         nav.addItem(new AppNavItem("Boom de materiales", BoomMaterialesView.class));
         nav.addItem(new AppNavItem("Control de producción", ControlProduccionView.class));
+        nav.addItem(new AppNavItem("Alta de productos", ProductosView.class));
+        nav.addItem(new AppNavItem("Alta de materiales", MaterialesView.class));
+        nav.addItem(new AppNavItem("Alta de procesos", AltaProcesosView.class));
+        nav.addItem(new AppNavItem("Proveedores", ProveedoresView.class));
+        nav.addItem(new AppNavItem("Clientes", ClientesView.class));
 
         return nav;
     }

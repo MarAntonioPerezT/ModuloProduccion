@@ -1,7 +1,9 @@
 package com.springApplication.moduloProduccion.views;
 
 
-import com.springApplication.moduloProduccion.models.Producto;
+import com.springApplication.moduloProduccion.models.Productos;
+import com.springApplication.moduloProduccion.repositories.ProductosRepository;
+import com.springApplication.moduloProduccion.services.ProductosService;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
@@ -17,10 +19,12 @@ import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.RolesAllowed;
 
 
 @Route(value = "explosionmateriales", layout = MainLayout.class)
 @PageTitle(value = "Boom de Materiales")
+@RolesAllowed("ADMIN")
 public class BoomMaterialesView extends VerticalLayout {
     private ComboBox<String> seleccionProductos;
     private TextField codigoProducto;
@@ -29,14 +33,13 @@ public class BoomMaterialesView extends VerticalLayout {
     private Button[] botonesOperativos;
     private Tab altaProductosTab;
     private Tab consultaProductosTab;
-    private Grid<Producto> tablaProductos;
+    private Grid<Productos> tablaProductos;
     private HorizontalLayout panelBotonesMateriales;
     private HorizontalLayout panelProductos;
     private VerticalLayout panelMateriales;
     private HorizontalLayout panelBotonesOperativos;
     private VerticalLayout panelTabla;
     private Tabs menu;
-
 
     public BoomMaterialesView(){
 
@@ -93,10 +96,9 @@ public class BoomMaterialesView extends VerticalLayout {
     }
 
     private void setPanelProductos(){
-
         panelProductos = new HorizontalLayout();
         seleccionProductos = new ComboBox<>("Seleccionar Productos");
-        seleccionProductos.setItems("Producto 1", "Producto 2", "Producto 3");
+        seleccionProductos.setItems("Producto1", "producto 2");
         codigoProducto = new TextField("Código de producto");
         panelProductos.add(seleccionProductos, codigoProducto);
 

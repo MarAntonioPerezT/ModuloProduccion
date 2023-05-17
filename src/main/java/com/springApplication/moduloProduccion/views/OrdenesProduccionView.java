@@ -2,47 +2,53 @@ package com.springApplication.moduloProduccion.views;
 
 import com.springApplication.moduloProduccion.models.*;
 import com.springApplication.moduloProduccion.services.*;
-//import com.springApplication.moduloProduccion.util.ProductosNotFoundException;
-import com.vaadin.flow.component.*;
+import com.springApplication.moduloProduccion.util.exceptions.ClientesNotFoundException;
+import com.springApplication.moduloProduccion.util.exceptions.EstadosOrdenNotFoundException;
+import com.springApplication.moduloProduccion.util.exceptions.ProcesosNotFoundException;
+import com.springApplication.moduloProduccion.util.exceptions.ProductosNotFoundException;
+import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.checkbox.CheckboxGroupVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.textfield.TextFieldBase;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
-import com.vaadin.flow.component.checkbox.CheckboxGroup;
-import org.hibernate.annotations.Check;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
 
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
 @PageTitle("Órdenes de Producción")
 @Route(value = "ordenesProduccion", layout = MainLayout.class)
 @RouteAlias(value = "", layout = MainLayout.class)
+@RolesAllowed("ADMIN")
 public class OrdenesProduccionView extends VerticalLayout {
     private TextField numeroProduccion;
     private TextField estado;
@@ -50,45 +56,57 @@ public class OrdenesProduccionView extends VerticalLayout {
     private ComboBox<String> cliente;
     private DatePicker fechaEstimadaInicio;
     private DatePicker fechaEstimadaFinal;
+    private DatePicker fechaRealInicio;
+    private DatePicker fechaRealFinal;
     private Button[] botonesCRUD;
     private Button[] botonesOperativos;
     private Tab ordenesTab;
     private Tab consultarOrdenesTab;
     private Tabs menu;
-    private Grid<OrdenProducto> tablaOrdenes;
+    private Grid<Orden> tablaOrdenes;
     private FormLayout panelOrdenes;
     private HorizontalLayout panelBotonesOperativos;
     private HorizontalLayout panelBotonesCrud;
-    private HorizontalLayout panelFiltro;
     private VerticalLayout panelTabla;
     private FormLayout panelProductos;
-    private ListDataProvider<Orden> dataProvider;
     @Autowired
-    private ProcesoService procesoService;
+    private ClientesService clientesService;
     @Autowired
-    private ProductoService productoService;
-    @Autowired
-    private ClienteService clienteService;
+    private EstadoOrdenService estadoOrdenService;
     @Autowired
     private OrdenService ordenService;
     @Autowired
-    private UsuarioService usuarioService;
+    private ProductosService productosService;
     @Autowired
-    private EstatusOrdenService estatusOrdenService;
+    private ProcesoService procesoService;
     @Autowired
-    private OrdenProductoService ordenProductoService;
+    private DetalleOrdenService detalleOrdenService;
+    @Autowired
+    private PersonaClienteService personaClienteService;
+    @Autowired
+    private PersonasFisicasClientesService personasFisicasClientesService;
+    @Autowired
+    private PersonasMoralesClientesService personasMoralesClientesService;
+    @Autowired
+    private EstadoProcesoService estadoProcesoService;
 
 
-    public OrdenesProduccionView(ProcesoService procesoService, ProductoService productoService, ClienteService clienteService, OrdenService ordenService,
-                                 UsuarioService usuarioService, EstatusOrdenService estatusOrdenService, OrdenProductoService ordenProductoService) {
+    public OrdenesProduccionView(ClientesService clientesService, EstadoOrdenService estadoOrdenService, OrdenService ordenService,
+                                 ProductosService productosService, ProcesoService procesoService, DetalleOrdenService detalleOrdenService,
+                                 PersonaClienteService personaClienteService, PersonasFisicasClientesService personasFisicasClientesService,
+                                 PersonasMoralesClientesService personasMoralesClientesService, EstadoProcesoService estadoProcesoService){
 
-        this.productoService = productoService;
-        this.procesoService = procesoService;
-        this.clienteService = clienteService;
+        this.clientesService = clientesService;
+        this.estadoOrdenService = estadoOrdenService;
         this.ordenService = ordenService;
-        this.usuarioService = usuarioService;
-        this.estatusOrdenService = estatusOrdenService;
-        this.ordenProductoService = ordenProductoService;
+        this.productosService = productosService;
+        this.procesoService = procesoService;
+        this.detalleOrdenService = detalleOrdenService;
+        this.personaClienteService = personaClienteService;
+        this.personasFisicasClientesService = personasFisicasClientesService;
+        this.personasMoralesClientesService = personasMoralesClientesService;
+        this.estadoProcesoService = estadoProcesoService;
+
         initComponents();
 
     }
@@ -124,10 +142,10 @@ public class OrdenesProduccionView extends VerticalLayout {
         return menu;
 
     }
-    
+
     private void setContentOnTabs(Tab tabs){
 
-       remove(getPanelBotonesCrud(), getPanelOrdenes(), getPanelProductos(), getPanelBotonesOperativos(), getPanelTabla());
+        remove(getPanelBotonesCrud(), getPanelOrdenes(), getPanelProductos(), getPanelBotonesOperativos(), getPanelTabla());
 
         if (tabs.equals(ordenesTab)) {
 
@@ -146,15 +164,13 @@ public class OrdenesProduccionView extends VerticalLayout {
         panelBotonesCrud = new HorizontalLayout();
         botonesCRUD = new Button[]{
                 new Button("Añadir orden"),
-                new Button(new Icon(VaadinIcon.PLUS_CIRCLE)),
-                new Button(new Icon(VaadinIcon.MINUS_CIRCLE)),
+                new Button("Añadir producto"),
+                new Button("Eliminar Producto"),
         };
 
         botonesCRUD[0].addClickListener(new AnadirOrdenListener());
         botonesCRUD[1].addClickListener(new AnadirProductoListener());
-        botonesCRUD[1].setTooltipText("Agregar producto");
         botonesCRUD[2].addClickListener(new BorrarProductoListener());
-        botonesCRUD[2].setTooltipText("Quitar producto");
         panelBotonesCrud.add(botonesCRUD);
 
     }
@@ -185,51 +201,51 @@ public class OrdenesProduccionView extends VerticalLayout {
 
     private void desactivarComponentes(List<Component> components){
 
-       for (Component listaComponentes: components){
+        for (Component listaComponentes: components){
 
-           if (listaComponentes instanceof HorizontalLayout && listaComponentes.equals(getPanelBotonesCrud())){
+            if (listaComponentes instanceof HorizontalLayout && listaComponentes.equals(getPanelBotonesCrud())){
 
-               listaComponentes.getElement().getChild(0).setEnabled(true);
-               listaComponentes.getElement().getChild(1).setEnabled(false);
-               listaComponentes.getElement().getChild(2).setEnabled(false);
+                listaComponentes.getElement().getChild(0).setEnabled(true);
+                listaComponentes.getElement().getChild(1).setEnabled(false);
+                listaComponentes.getElement().getChild(2).setEnabled(false);
 
-           } else if (listaComponentes instanceof HorizontalLayout && listaComponentes.equals(getPanelBotonesOperativos())){
+            } else if (listaComponentes instanceof HorizontalLayout && listaComponentes.equals(getPanelBotonesOperativos())){
 
-               ((HorizontalLayout) listaComponentes).setEnabled(false);
+                ((HorizontalLayout) listaComponentes).setEnabled(false);
 
-           } else if (listaComponentes instanceof FormLayout && listaComponentes.equals(getPanelOrdenes())){
+            } else if (listaComponentes instanceof FormLayout && listaComponentes.equals(getPanelOrdenes())){
 
-               for (Component listaComponentesPanelOrdenes: listaComponentes.getChildren().toList()){
+                for (Component listaComponentesPanelOrdenes: listaComponentes.getChildren().toList()){
 
-                   if (listaComponentesPanelOrdenes instanceof TextField){
+                    if (listaComponentesPanelOrdenes instanceof TextField){
 
                         ((TextField) listaComponentesPanelOrdenes).setEnabled(false);
                         ((TextField) listaComponentesPanelOrdenes).setValue("");
 
-                   } else if (listaComponentesPanelOrdenes instanceof DatePicker){
+                    } else if (listaComponentesPanelOrdenes instanceof DatePicker){
 
-                       ((DatePicker) listaComponentesPanelOrdenes).setEnabled(false);
+                        ((DatePicker) listaComponentesPanelOrdenes).setEnabled(false);
 
-                   } else if (listaComponentesPanelOrdenes instanceof ComboBox<?>){
+                    } else if (listaComponentesPanelOrdenes instanceof ComboBox<?>){
 
-                       ((ComboBox<?>) listaComponentesPanelOrdenes).setEnabled(false);
-                   }
-               }
-           } else if (listaComponentes instanceof FormLayout && listaComponentes.equals(getPanelProductos())) {
+                        ((ComboBox<?>) listaComponentesPanelOrdenes).setEnabled(false);
+                    }
+                }
+            } else if (listaComponentes instanceof FormLayout && listaComponentes.equals(getPanelProductos())) {
 
-               ((FormLayout) listaComponentes).setEnabled(false);
+                ((FormLayout) listaComponentes).setEnabled(false);
 
-               if (getPanelProductos().getElement().getChildCount() > 4){
+                if (getPanelProductos().getElement().getChildCount() > 4){
 
-                   for (int i = getPanelProductos().getElement().getChildCount() - 1; i >= 4 ; i--){
+                    for (int i = getPanelProductos().getElement().getChildCount() - 1; i >= 4 ; i--){
 
-                       getPanelProductos().getElement().removeChild(i);
+                        getPanelProductos().getElement().removeChild(i);
 
-                   }
-               }
-           }
-       }
-       limpiarComponentes();
+                    }
+                }
+            }
+        }
+        limpiarComponentes();
     }
 
     private void activarComponentes(List<Component> components){
@@ -265,24 +281,24 @@ public class OrdenesProduccionView extends VerticalLayout {
                     } else if (listaComponentesPanelOrdenes instanceof TextField && listaComponentesPanelOrdenes.equals(estado)){
 
                         ((TextField) listaComponentesPanelOrdenes).setEnabled(false);
-                        ((TextField) listaComponentesPanelOrdenes).setValue(estatusOrdenService.findEstatusNombreByNombre("En Espera"));
+                        ((TextField) listaComponentesPanelOrdenes).setValue(estadoOrdenService.findEstatusNombreByNombre("En Espera"));
 
                     } else if (listaComponentesPanelOrdenes instanceof TextField && listaComponentesPanelOrdenes.equals(usuario)){
 
                         ((TextField) listaComponentesPanelOrdenes).setEnabled(false);
-                        ((TextField) listaComponentesPanelOrdenes).setValue(usuarioService.findNombreUsuarioByNombre("Eduardo"));
+                        ((TextField) listaComponentesPanelOrdenes).setValue("Eduardo");
 
                     } else if (listaComponentesPanelOrdenes instanceof ComboBox<?>){
 
-                            ((ComboBox<?>) listaComponentesPanelOrdenes).setEnabled(true);
+                        ((ComboBox<?>) listaComponentesPanelOrdenes).setEnabled(true);
 
                     } else if (listaComponentesPanelOrdenes instanceof DatePicker) {
 
                         ((DatePicker) listaComponentesPanelOrdenes).setEnabled(true);
 
-                    } else if (listaComponentesPanelOrdenes instanceof CheckboxGroup<?>){
+                    } else if (listaComponentesPanelOrdenes instanceof MultiSelectComboBox<?>){
 
-                        ((CheckboxGroup<?>) listaComponentesPanelOrdenes).setEnabled(true);
+                        ((MultiSelectComboBox<?>) listaComponentesPanelOrdenes).setEnabled(true);
 
                     }
                 }
@@ -291,38 +307,37 @@ public class OrdenesProduccionView extends VerticalLayout {
     }
     private void limpiarComponentes(){
 
-       cliente.setValue(null);
-       fechaEstimadaInicio.setValue(null);
-       fechaEstimadaFinal.setValue(null);
+        cliente.setValue(null);
+        fechaEstimadaInicio.setValue(null);
+        fechaEstimadaFinal.setValue(null);
+        fechaRealFinal.setValue(null);
+        fechaRealInicio.setValue(null);
 
-       for (Component listaComponentesPanelProductos: getPanelProductos().getChildren().toList()){
+        for (Component listaComponentesPanelProductos: getPanelProductos().getChildren().toList()){
 
-           if (listaComponentesPanelProductos instanceof ComboBox<?>){
+            if (listaComponentesPanelProductos instanceof ComboBox<?>){
 
-               ((ComboBox<?>) listaComponentesPanelProductos).setValue(null);
-           }
-           if (listaComponentesPanelProductos instanceof IntegerField){
+                ((ComboBox<?>) listaComponentesPanelProductos).setValue(null);
+            }
+            if (listaComponentesPanelProductos instanceof IntegerField){
 
-               ((IntegerField) listaComponentesPanelProductos).setValue(null);
-               ((IntegerField) listaComponentesPanelProductos).setInvalid(false);
+                ((IntegerField) listaComponentesPanelProductos).setValue(null);
+                ((IntegerField) listaComponentesPanelProductos).setInvalid(false);
 
-           }
+            }
 
-           if (listaComponentesPanelProductos instanceof TextArea){
+            if (listaComponentesPanelProductos instanceof TextArea){
 
-               ((TextArea) listaComponentesPanelProductos).setValue("");
+                ((TextArea) listaComponentesPanelProductos).setValue("");
 
-           }
+            }
 
-           if (listaComponentesPanelProductos instanceof CheckboxGroup<?>){
+            if (listaComponentesPanelProductos instanceof MultiSelectComboBox<?>){
 
-               ((CheckboxGroup<?>) listaComponentesPanelProductos).deselectAll();
+                ((MultiSelectComboBox<?>) listaComponentesPanelProductos).deselectAll();
 
-           }
-
-       }
-
-
+            }
+        }
     }
 
 
@@ -330,17 +345,17 @@ public class OrdenesProduccionView extends VerticalLayout {
 
         panelProductos = new FormLayout();
         ComboBox<String> nuevoComboBox = new ComboBox<>("Seleccionar Productos");
-        nuevoComboBox.setItems(new ListDataProvider<>(productoService.getAllProductosByNombre()));
+        nuevoComboBox.setItems(new ListDataProvider<>(productosService.findAllProductosByNombre()));
         IntegerField nuevoIntegerField = new IntegerField("Cantidad");
         nuevoIntegerField.setMin(1);
         nuevoIntegerField.setMax(1000);
         nuevoIntegerField.setStepButtonsVisible(true);
         TextArea textArea = new TextArea("Especificaciones");
         textArea.setMaxLength(200);
-        CheckboxGroup<String> checkBoxProcesos = new CheckboxGroup<>("Seleccione procesos");
-        checkBoxProcesos.setItems(new ListDataProvider<>(procesoService.getAllProcesosByNombre()));
+        MultiSelectComboBox<String> procesos = new MultiSelectComboBox<>("Seleccione procesos");
+        procesos.setItems(new ListDataProvider<>(procesoService.findAllProcesosByNombre()));
         panelProductos.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
-        panelProductos.add(nuevoComboBox, nuevoIntegerField, textArea, checkBoxProcesos);
+        panelProductos.add(nuevoComboBox, nuevoIntegerField, textArea, procesos);
 
     }
 
@@ -353,24 +368,52 @@ public class OrdenesProduccionView extends VerticalLayout {
     private void setPanelOrdenes(){
 
         panelOrdenes = new FormLayout();
-        panelOrdenes.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 2));
+        panelOrdenes.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 4));
         panelOrdenes.addClassName("ordenes");
         estado = new TextField("Estado");
         usuario = new TextField("Usuario");
         cliente = new ComboBox<>("Clientes:");
-        cliente.setItems(new ListDataProvider<>(clienteService.findAllClientesByName()));
+        cliente.setItems(new ListDataProvider<>(personaClienteService.findAllClientesByRFC()));
+        cliente.addValueChangeListener(event->{
+
+            String RFC = event.getValue();
+            if (RFC != null && !RFC.isEmpty()){
+
+                String personaFisica = personasFisicasClientesService.findNombreClienteByRFC(RFC);
+                String personaMoral = personasMoralesClientesService.findRazonSocialByRFC(RFC);
+
+                if (personaFisica != null && !personaFisica.isEmpty()){
+
+                    cliente.setHelperText("Cliente: " + personaFisica);
+
+                } else if (personaMoral != null && !personaMoral.isEmpty()){
+
+                    cliente.setHelperText("Cliente: " + personaMoral);
+                }
+            }
+
+        });
         fechaEstimadaInicio = new DatePicker("Fecha Estimada de Inicio");
         fechaEstimadaInicio.setMin(LocalDate.now());
         fechaEstimadaFinal = new DatePicker("Fecha Estimada de Finalización");
         fechaEstimadaFinal.setMin(LocalDate.now());
+        fechaRealInicio = new DatePicker("Fecha Real de Inicio");
+        fechaRealInicio.setMin(LocalDate.now());
+        fechaRealFinal = new DatePicker("Fecha Real Final");
+        fechaRealFinal.setMin(LocalDate.now());
         numeroProduccion = new TextField("N.P");
+
+
+
         panelOrdenes.add(
                 numeroProduccion,
                 estado,
                 usuario,
                 cliente,
                 fechaEstimadaInicio,
-                fechaEstimadaFinal
+                fechaEstimadaFinal,
+                fechaRealInicio,
+                fechaRealFinal
         );
     }
 
@@ -387,28 +430,8 @@ public class OrdenesProduccionView extends VerticalLayout {
         tablaOrdenes.addColumn(ordenProducto -> "Celda").setHeader("ID Orden-Producto");
         tablaOrdenes.addColumn(ordenProducto -> "Celda 2").setHeader("ID Orden");
         tablaOrdenes.addColumn(ordenProducto -> "Celda 3").setHeader("ID Producto");
-        //panelTabla.add(tablaOrdenes);
+        panelTabla.add(tablaOrdenes);
 
-        panelFiltro = new HorizontalLayout();
-        Button btActualizar = new Button(new Icon("lumo", "reload"));
-        btActualizar.setTooltipText("Actualizar tabla");
-        btActualizar.addClickListener(eventoActualizar ->{
-          //actualizarTabla();
-        });
-        TextField filtro = new TextField("Filtro");
-        Button btLimpiarBusqueda = new Button("Limpiar Busqueda");
-        filtro.addValueChangeListener(event ->{
-
-            dataProvider.setFilterByValue(Orden::getCliente, event.getValue());
-        });
-        btLimpiarBusqueda.addClickListener(eventoBuscar ->{
-
-            filtro.clear();
-            dataProvider.clearFilters();
-        });
-        panelFiltro.add(filtro, btLimpiarBusqueda, btActualizar);
-        panelFiltro.setVerticalComponentAlignment(Alignment.END, btLimpiarBusqueda, btActualizar);
-        panelTabla.add(panelFiltro, tablaOrdenes);
     }
 
     private VerticalLayout getPanelTabla(){
@@ -433,6 +456,13 @@ public class OrdenesProduccionView extends VerticalLayout {
     }
 
     public class GuardarOrdenListener implements ComponentEventListener<ClickEvent<Button>>{
+
+        Productos productos;
+        Integer cantidad;
+        String especificaciones;
+        Set<String> procesosCombobox;
+        DetalleOrdenes detalleOrdenes;
+
         @Override
         public void onComponentEvent(ClickEvent<Button> event) {
 
@@ -445,44 +475,107 @@ public class OrdenesProduccionView extends VerticalLayout {
             dialog.getFooter().add(btAceptar, btCancelar);
             dialog.add("¿Está seguro de guardar esta orden de producción?");
             dialog.open();
-            btAceptar.addClickListener(eventSave -> {
 
+            btAceptar.addClickListener(eventSave -> {
                 try {
+
                     Orden ordenNueva = new Orden();
-                    Cliente clienteExistente = clienteService.findClienteByNombre(cliente.getValue());
-                    EstatusOrden estatusOrden = estatusOrdenService.findEstatusByNombreEstado(estado.getValue());
-                    Usuario usuarioExistente = usuarioService.findUsuarioByNombre(usuario.getValue());
+                    Long idCliente = clientesService.obtenerIdClientePorRFC(cliente.getValue());
+                    Clientes clienteExistente = clientesService.obtenerClientePorId(idCliente);
+                    clienteExistente.getOrden().add(ordenNueva);
+                    EstadoOrden estatusOrden = estadoOrdenService.findEstatusByNombreEstado(estado.getValue());
+                    estatusOrden.getOrden().add(ordenNueva);
                     LocalDate fechaInicio = fechaEstimadaInicio.getValue();
                     LocalDate fechaFinal = fechaEstimadaFinal.getValue();
                     Date fechaInicioSQL = Date.valueOf(fechaInicio);
                     Date fechaFinalSQL = Date.valueOf(fechaFinal);
                     ordenNueva.setNp(Long.parseLong(numeroProduccion.getValue()));
-                    ordenNueva.setFechaInicio(fechaInicioSQL);
-                    ordenNueva.setFechaFinal(fechaFinalSQL);
-                    ordenNueva.setCliente(clienteExistente);
-                    ordenNueva.setUsuario(usuarioExistente);
-                    ordenNueva.setEstatus(estatusOrden);
-                    List<Producto> productos = new ArrayList<>();
-                    List<Integer> cantidades = new ArrayList<>();
-                    List<String> especificaciones = new ArrayList<>();
+                    ordenNueva.setFechaEstimadaInicio(fechaInicioSQL);
+                    ordenNueva.setFechaEstimadaFinal(fechaFinalSQL);
+                    ordenNueva.setFechaRealIniciol(fechaInicioSQL);
+                    ordenNueva.setFechaRealFinal(fechaFinalSQL);
+                    ordenNueva.setEstadoOrden(estatusOrden);
+                    ordenNueva.setClientes(clienteExistente);
+                    ordenService.guardarOrden(ordenNueva);
+
                     for (Component panelProductos: getPanelProductos().getChildren().toList()){
 
+                        detalleOrdenes = new DetalleOrdenes();
+                        /*
+                        detalleOrdenes.setOrden(ordenNueva);
+                        ordenNueva.getDatalleOrdenes().add(detalleOrdenes);
+                        EstadoProceso estadoProceso = estadoProcesoService.findByEstado("En espera");
+                        estadoProceso.getDetalleOrdenes().add(detalleOrdenes);
+                        detalleOrdenes.setEstadoProceso(estadoProceso);
+
+
+                         */
                         if (panelProductos instanceof ComboBox<?>){
 
-                            Producto producto = productoService.findProductoByNombre((String) ((ComboBox<?>) panelProductos).getValue());
-                            productos.add(producto);
+                            String nombreProducto = (String) ((ComboBox<?>) panelProductos).getValue();
+                            productos = productosService.findProductoByNombre(nombreProducto);
+                            System.out.println(productos.getNombre());
+                            //productos.getDatalleOrdenes().add(detalleOrdenes);
+                            //detalleOrdenes.setProductos(productos);
 
                         } else if (panelProductos instanceof IntegerField){
 
-                            cantidades.add(((IntegerField) panelProductos).getValue());
+                            cantidad = ((IntegerField) panelProductos).getValue();
+                            System.out.println(cantidad);
+                            //detalleOrdenes.setCantidad(cantidad);
 
                         } else if (panelProductos instanceof TextArea){
 
-                            especificaciones.add(((TextArea) panelProductos).getValue());
+                            especificaciones = ((TextArea) panelProductos).getValue();
+                            //detalleOrdenes.setEspecificaciones(especificaciones);
+                            //detalleOrdenes.setNombreEncargado("José Manuel");
 
+                        } else if (panelProductos instanceof MultiSelectComboBox<?>){
+
+                            procesosCombobox = (Set<String>) ((MultiSelectComboBox<?>) panelProductos).getSelectedItems();
+                            ArrayList<String> procesosSeleccionados = new ArrayList<>();
+                            procesosSeleccionados.addAll(procesosCombobox);
+
+                            for (int i = 0; i < procesosSeleccionados.size(); i++){
+
+                                if (i == 0){
+
+                                    Procesos procesosGuardado = procesoService.findByNombre(procesosSeleccionados.get(i));
+                                    detalleOrdenes.setCantidad(cantidad);
+                                    detalleOrdenes.setEspecificaciones(especificaciones);
+                                    detalleOrdenes.setEstadoProceso(estadoProcesoService.findByEstado("En espera"));
+                                    detalleOrdenes.setNombreEncargado("");
+                                    detalleOrdenes.setOrden(ordenNueva);
+                                    ordenNueva.getDatalleOrdenes().add(detalleOrdenes);
+                                    detalleOrdenes.setProcesos(procesosGuardado);
+                                    procesosGuardado.getDatalleOrdenes().add(detalleOrdenes);
+                                    detalleOrdenes.setProductos(productos);
+                                    productos.getDatalleOrdenes().add(detalleOrdenes);
+                                    detalleOrdenService.saveDetalleOrden(detalleOrdenes);
+
+
+                                } else{
+
+                                    DetalleOrdenes detalleNuevo = new DetalleOrdenes();
+                                    Procesos procesoNuevo = procesoService.findByNombre(procesosSeleccionados.get(i));
+                                    detalleNuevo.setOrden(ordenNueva);
+                                    ordenNueva.getDatalleOrdenes().add(detalleNuevo);
+                                    detalleNuevo.setCantidad(cantidad);
+                                    detalleNuevo.setEspecificaciones(especificaciones);
+                                    detalleNuevo.setNombreEncargado("");
+                                    detalleNuevo.setEstadoProceso(estadoProcesoService.findByEstado("En espera"));
+                                    detalleNuevo.setProductos(productos);
+                                    productos.getDatalleOrdenes().add(detalleNuevo);
+                                    detalleNuevo.setProcesos(procesoNuevo);
+                                    procesoNuevo.getDatalleOrdenes().add(detalleNuevo);
+                                    detalleOrdenService.saveDetalleOrden(detalleNuevo);
+
+
+                                }
+
+                            }
                         }
                     }
-                    ordenProductoService.saveOrdenConProductos(ordenNueva, productos, cantidades, especificaciones);
                     Dialog dialogoConfirmacion = new Dialog();
                     dialogoConfirmacion.add("Orden agregada exitosamente!");
                     dialog.close();
@@ -493,13 +586,13 @@ public class OrdenesProduccionView extends VerticalLayout {
 
                     dialog.close();
                     Notification.show("Verifica que no tengas campos vacíos", 4000, Notification.Position.BOTTOM_END);
+                    e.printStackTrace();
 
-                }catch (InvalidDataAccessApiUsageException e2){
-
-                    dialog.close();
-                    Notification.show("No puedes agregar 2 o mas productos iguales a la vez", 4000, Notification.Position.TOP_END);
                 }
             });
+
+
+
             btCancelar.addClickListener(eventCancel -> {
 
                 dialog.close();
@@ -509,9 +602,10 @@ public class OrdenesProduccionView extends VerticalLayout {
         }
     }
 
-    
+
     public class BotonLimpiarListener implements ComponentEventListener<ClickEvent<Button>> {
 
+        @Override
         public void onComponentEvent(ClickEvent<Button> event) {
 
             limpiarComponentes();
@@ -522,7 +616,46 @@ public class OrdenesProduccionView extends VerticalLayout {
         @Override
         public void onComponentEvent(ClickEvent<Button> event) {
 
-            activarComponentes(getMainPanel().getChildren().toList());
+            try{
+
+                if (estadoOrdenService.count() == 0){
+
+                    throw new EstadosOrdenNotFoundException();
+
+                } else if (clientesService.count() == 0){
+
+                    throw new ClientesNotFoundException();
+                } else if (procesoService.count() == 0){
+
+                    throw new ProcesosNotFoundException();
+
+                } else if (productosService.countProductos() == 0){
+
+                    throw new ProductosNotFoundException();
+                } else {
+
+                    activarComponentes(getMainPanel().getChildren().toList());
+
+                }
+
+            } catch (EstadosOrdenNotFoundException e){
+
+                Notification notificacionError = Notification.show("No existen estados para una OP. Favor de agregarlos", 4000, Notification.Position.MIDDLE);
+                notificacionError.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            } catch (ClientesNotFoundException e){
+
+                Notification notificacionError = Notification.show("No se encontraron clientes en el sistema. Favor de agregarlos", 4000, Notification.Position.MIDDLE);
+                notificacionError.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            } catch (ProcesosNotFoundException e){
+
+                Notification notificacionError = Notification.show("No se encontraron procesos en el sistema. Favor de agregarlos", 4000, Notification.Position.MIDDLE);
+                notificacionError.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            } catch (ProductosNotFoundException e){
+
+                Notification notificacionError = Notification.show("No se encontraron productos en el sistema. Favor de agregarlos", 4000, Notification.Position.MIDDLE);
+                notificacionError.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+
         }
     }
     public class AnadirProductoListener implements ComponentEventListener<ClickEvent<Button>> {
@@ -530,19 +663,19 @@ public class OrdenesProduccionView extends VerticalLayout {
         public void onComponentEvent(ClickEvent<Button> event) {
 
             ComboBox<String> nuevoComboBox = new ComboBox<>("Seleccionar Productos");
-            nuevoComboBox.setItems(new ListDataProvider<>(productoService.getAllProductosByNombre()));
+            nuevoComboBox.setItems(new ListDataProvider<>(productosService.findAllProductosByNombre()));
             IntegerField nuevoIntegerField = new IntegerField("Cantidad");
             nuevoIntegerField.setMin(1);
             nuevoIntegerField.setMax(1000);
             nuevoIntegerField.setStepButtonsVisible(true);
             TextArea textArea = new TextArea("Especificaciones");
             textArea.setMaxLength(200);
-            CheckboxGroup<String> checkBoxProcesos = new CheckboxGroup<>();
-            checkBoxProcesos.setItems(new ListDataProvider<>(procesoService.getAllProcesosByNombre()));
+            MultiSelectComboBox<String> procesos = new MultiSelectComboBox<>("Seleccionar Procesos");
+            procesos.setItems(new ListDataProvider<>(procesoService.findAllProcesosByNombre()));
             getPanelProductos().add(nuevoComboBox);
             getPanelProductos().add(nuevoIntegerField);
             getPanelProductos().add(textArea);
-            getPanelProductos().add(checkBoxProcesos);
+            getPanelProductos().add(procesos);
         }
     }
     public class BorrarProductoListener implements ComponentEventListener<ClickEvent<Button>> {
